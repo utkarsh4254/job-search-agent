@@ -45,9 +45,9 @@ jobs:
           NOTIFY_EMAIL_PASSWORD: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           NOTIFY_EMAIL_TO:       ${{ secrets.NOTIFY_EMAIL_TO }}
           NOTIFY_EMAIL_PROVIDER: ${{ secrets.NOTIFY_EMAIL_PROVIDER }}
-          SEARCH_KEYWORDS: "software engineer"
-          SEARCH_LOCATION: ""
-          SEARCH_INDUSTRY: "tech startup"
+          SEARCH_KEYWORDS: "IT jobs"
+          SEARCH_LOCATION: "TORONTO"
+          SEARCH_INDUSTRY: "IT"
           MAX_JOB_AGE_DAYS: "1"
         run: python github_runner.py
 
