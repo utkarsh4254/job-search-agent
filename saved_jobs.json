@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "title": "Senior Backend Engineer",
+    "company": "Stripe",
+    "location": "Remote",
+    "url": "https://stripe.com/jobs/listing/senior-backend-engineer/123",
+    "source": "Job Board (Adzuna)",
+    "notes": "Great compensation, uses Go and Python. Apply before Friday!",
+    "status": "Applied",
+    "saved_at": "2026-02-18T09:14:22",
+    "applied_at": "2026-02-18T10:30:00"
+  },
+  {
+    "id": 2,
+    "title": "Full Stack Developer",
+    "company": "Linear",
+    "location": "San Francisco, CA",
+    "url": "https://linear.app/careers",
+    "source": "Company Career Page",
+    "notes": "Small team, product-focused. Saw it on their website before it hit job boards.",
+    "status": "Interview",
+    "saved_at": "2026-02-17T14:05:11",
+    "applied_at": "2026-02-17T15:00:00"
+  },
+  {
+    "id": 3,
+    "title": "Machine Learning Engineer",
+    "company": "NeuralFlow AI",
+    "location": "Austin, TX",
+    "url": "https://maps.google.com/?place_id=abc123",
+    "source": "Google Maps Startup Discovery",
+    "notes": "Found via Maps — tiny team of 8. Founder is very responsive on LinkedIn.",
+    "status": "Saved",
+    "saved_at": "2026-02-19T08:22:44",
+    "applied_at": ""
+  },
+  {
+    "id": 4,
+    "title": "DevOps Engineer",
+    "company": "CloudCore Systems",
+    "location": "London, UK",
+    "url": "https://cloudcore.io/jobs",
+    "source": "Job Board (Adzuna)",
+    "notes": "",
+    "status": "Rejected",
+    "saved_at": "2026-02-15T11:00:00",
+    "applied_at": "2026-02-15T12:00:00"
+  },
+  {
+    "id": 5,
+    "title": "React Frontend Developer",
+    "company": "Vercel",
+    "location": "Remote",
+    "url": "https://vercel.com/careers",
+    "source": "Company Career Page",
+    "notes": "Dream job. Check if they have open roles weekly.",
+    "status": "Saved",
+    "saved_at": "2026-02-19T07:55:30",
+    "applied_at": ""
+  },
+  {
+    "id": 6,
+    "title": "Data Scientist",
+    "company": "HealthTrack",
+    "location": "New York, NY",
+    "url": "https://healthtrack.com/jobs/data-scientist",
+    "source": "Job Board (Adzuna)",
+    "notes": "Requires 3 years experience. Salary range $120k-$150k.",
+    "status": "No Response",
+    "saved_at": "2026-02-10T13:44:01",
+    "applied_at": "2026-02-11T09:00:00"
+  },
+  {
+    "id": 7,
+    "title": "Python Backend Developer",
+    "company": "Finly",
+    "location": "Austin, TX",
+    "url": "https://maps.google.com/?place_id=xyz789",
+    "source": "Google Maps Startup Discovery",
+    "notes": "Seed-stage fintech startup. 15 employees. No public job listing — email directly.",
+    "status": "Saved",
+    "saved_at": "2026-02-19T08:30:00",
+    "applied_at": ""
+  },
+  {
+    "id": 8,
+    "title": "Senior Software Engineer",
+    "company": "Shopify",
+    "location": "Toronto, Canada",
+    "url": "https://shopify.com/careers",
+    "source": "Manual Entry",
+    "notes": "Referred by a friend who works there. Fast-track review.",
+    "status": "Offer",
+    "saved_at": "2026-02-12T16:20:00",
+    "applied_at": "2026-02-13T10:00:00"
+  }
+]
