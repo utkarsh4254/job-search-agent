@@ -108,7 +108,7 @@ Be thorough. Use multiple tools. Always sort by newest first."""
 def execute_tool(name: str, inputs: dict) -> str:
     try:
         if name == "search_job_boards":
-            return search_job_boards(inputs["keywords"], inputs.get("location", ""), inputs.get("max_days_old", 1))
+            return search_job_boards(inputs["keywords"], inputs.get("location", ""), int(inputs.get("max_days_old", 1)))
         elif name == "scrape_company_careers":
             return scrape_company_careers(inputs["company_name"], inputs["careers_url"], inputs.get("keywords", ""))
         elif name == "find_startups_on_maps":
