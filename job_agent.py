@@ -1,7 +1,6 @@
 """
-job_agent.py — AI Job Search Agent (FREE VERSION)
-==================================================
-Uses Groq (Llama 3.3 70B) + Gemini fallback instead of paid Claude API.
+job_agent.py — AI Job Search Agent (Free Version)
+Uses Groq (Llama 3.3 70B) + Gemini fallback.
 """
 
 import json
@@ -23,62 +22,36 @@ from more_sources import (
 TOOLS = [
     {
         "name": "search_job_boards",
-        "description": "Search Adzuna job board for newly posted jobs sorted by date. Returns title, company, location, date posted, and URL.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "keywords":     {"type": "string",  "description": "Job title or skills"},
-                "location":     {"type": "string",  "description": "City or country"},
-            },
-            "required": ["keywords"]
-        }
-    },
-    {
-        "name": "scrape_company_careers",
-        "description": "Scrape a company's own careers page for jobs not listed on job boards.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "company_name": {"type": "string", "description": "Company name"},
-                "careers_url":  {"type": "string", "description": "URL of careers page"},
-                "keywords":     {"type": "string", "description": "Filter by keywords (optional)"}
-            },
-            "required": ["company_name", "careers_url"]
-        }
-    },
-    {
-        "name": "find_startups_on_maps",
-        "description": "Find small/unknown companies via Google Maps that may be hiring.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "industry":    {"type": "string",  "description": "e.g. software startup"},
-                "location":    {"type": "string",  "description": "City or area"},
-                "max_results": {"type": "integer", "description": "Max companies (default 10)"}
-            },
-            "required": ["industry", "location"]
-        }
-    },
-    {
-        "name": "search_more_sources",
-        "description": "Search RemoteOK, Wellfound (YC startups), Indeed, or Hacker News hiring posts.",
+        "description": "Search Adzuna for IT jobs posted today. Always call this first.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "keywords": {"type": "string", "description": "Job title or skills"},
-                "location": {"type": "string", "description": "City or blank for remote"},
-                "source": {
-                    "type": "string",
-                    "description": "Which source to use",
-                    "enum": ["all", "remoteok", "wellfound", "indeed", "hackernews"]
-                }
+                "location": {"type": "string", "description": "City or country"}
             },
             "required": ["keywords"]
         }
     },
     {
+        "name": "search_more_sources",
+        "description": "Search RemoteOK or Hacker News for extra jobs.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "keywords": {"type": "string", "description": "Job title or skills"},
+                "location": {"type": "string", "description": "City (optional)"},
+                "source": {
+                    "type": "string",
+                    "description": "Which source",
+                    "enum": ["remoteok", "hackernews", "wellfound", "indeed", "all"]
+                }
+            },
+            "required": ["keywords", "source"]
+        }
+    },
+    {
         "name": "save_job",
-        "description": "Save an interesting job to the local jobs file.",
+        "description": "IMPORTANT: Save each good job you find. Call this for every job.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -86,45 +59,55 @@ TOOLS = [
                 "company":  {"type": "string", "description": "Company name"},
                 "location": {"type": "string", "description": "Job location"},
                 "url":      {"type": "string", "description": "Link to the job"},
-                "source":   {"type": "string", "description": "Where this job was found"},
-                "notes":    {"type": "string", "description": "Extra info about this job"}
+                "source":   {"type": "string", "description": "Where found"},
+                "notes":    {"type": "string", "description": "Any notes"}
             },
             "required": ["title", "company", "source"]
         }
     }
 ]
 
-SYSTEM_PROMPT = """You are an expert job search agent. Find jobs as soon as they are posted.
-Strategy:
-1. Search job boards for fresh postings (max_days_old=1)
-2. Search Wellfound and Hacker News for startup roles
-3. Find small companies via Maps that post on their own sites
-4. Save every good opportunity using save_job
-5. Give a clear summary of what you found
-Be thorough. Use multiple tools. Always sort by newest first."""
+SYSTEM_PROMPT = """You are a job search agent. Your ONLY job is:
+1. Call search_job_boards once to find jobs
+2. Call search_more_sources with source="remoteok" once
+3. Call save_job for the TOP 5 most relevant jobs you found
+4. Stop and give a short summary
+
+RULES:
+- Maximum 3 search calls total — do NOT repeat searches
+- You MUST call save_job at least 3 times before finishing
+- Keep it short and focused
+- Do NOT search the same source twice"""
 
 
 def execute_tool(name: str, inputs: dict) -> str:
     try:
         if name == "search_job_boards":
-            return search_job_boards(inputs["keywords"], inputs.get("location", ""), 1)
-        elif name == "scrape_company_careers":
-            return scrape_company_careers(inputs["company_name"], inputs["careers_url"], inputs.get("keywords", ""))
-        elif name == "find_startups_on_maps":
-            return find_startups_on_maps(inputs["industry"], inputs["location"], inputs.get("max_results", 10))
+            result = search_job_boards(
+                inputs["keywords"],
+                inputs.get("location", ""),
+                1  # Always max 1 day old
+            )
+            # Truncate to avoid hitting Groq's token limit
+            return result[:800] + "\n[Results truncated — use save_job to save the best ones]" if len(result) > 800 else result
+
         elif name == "search_more_sources":
-            src = inputs.get("source", "all")
+            src = inputs.get("source", "remoteok")
             kw  = inputs["keywords"]
             loc = inputs.get("location", "")
-            if src == "remoteok":     return search_remoteok(kw)
-            elif src == "wellfound":  return search_wellfound(kw, loc)
-            elif src == "indeed":     return search_indeed(kw, loc)
-            elif src == "hackernews": return search_hn_hiring(kw)
-            else:                     return search_all_sources(kw, loc)
+            if src == "remoteok":    result = search_remoteok(kw)
+            elif src == "hackernews":result = search_hn_hiring(kw)
+            elif src == "wellfound": result = search_wellfound(kw, loc)
+            elif src == "indeed":    result = search_indeed(kw, loc)
+            else:                    result = search_remoteok(kw)
+            return result[:600] + "\n[Truncated]" if len(result) > 600 else result
+
         elif name == "save_job":
             return save_job_to_file(inputs)
+
         else:
             return f"Unknown tool: {name}"
+
     except Exception as e:
         return f"Tool error in {name}: {str(e)}"
 
@@ -138,38 +121,60 @@ def run_agent(goal: str, verbose: bool = True) -> str:
         print(f"🤖 AI: {ai.status()}\n")
 
     messages  = [{"role": "user", "content": goal}]
-    max_turns = 20
+    max_turns = 8  # Keep short to avoid rate limits
+    jobs_saved = 0
 
     for turn in range(max_turns):
-        response   = ai.chat(messages, TOOLS, SYSTEM_PROMPT)
+        try:
+            response = ai.chat(messages, TOOLS, SYSTEM_PROMPT)
+        except Exception as e:
+            print(f"❌ AI error on turn {turn}: {e}")
+            break
+
         stop       = response["stop_reason"]
         text       = response.get("content", "")
         tool_calls = response.get("tool_calls", [])
 
-        if stop == "tool_use":
+        if stop == "tool_use" and tool_calls:
+            # Build assistant message
             assistant_blocks = []
             if text:
                 assistant_blocks.append({"type": "text", "text": text})
             for tc in tool_calls:
-                assistant_blocks.append({"type": "tool_use", "id": tc["id"], "name": tc["name"], "input": tc["input"]})
+                assistant_blocks.append({
+                    "type": "tool_use",
+                    "id":   tc["id"],
+                    "name": tc["name"],
+                    "input": tc["input"]
+                })
             messages.append({"role": "assistant", "content": assistant_blocks})
 
+            # Execute tools
             tool_results = []
             for tc in tool_calls:
                 if verbose:
-                    print(f"🔧 [{tc['name']}] {json.dumps(tc['input'])[:120]}")
+                    print(f"🔧 [{tc['name']}] {json.dumps(tc['input'])[:100]}")
                 result = execute_tool(tc["name"], tc["input"])
+                if tc["name"] == "save_job":
+                    jobs_saved += 1
                 if verbose:
-                    print(f"   → {result[:250]}{'...' if len(result) > 250 else ''}\n")
-                tool_results.append({"type": "tool_result", "tool_use_id": tc["id"], "content": result})
+                    print(f"   → {result[:200]}{'...' if len(result) > 200 else ''}\n")
+                tool_results.append({
+                    "type":        "tool_result",
+                    "tool_use_id": tc["id"],
+                    "content":     result
+                })
             messages.append({"role": "user", "content": tool_results})
+
         else:
+            # Agent finished
             if verbose and text:
-                print(f"\n✅ SUMMARY:\n{text}")
+                print(f"\n✅ DONE! Jobs saved this run: {jobs_saved}\n{text}")
             return text
 
-    print("⚠️  Max turns reached.")
-    return "Search complete."
+    if verbose:
+        print(f"⚠️  Max turns reached. Jobs saved: {jobs_saved}")
+    return f"Search complete. Jobs saved: {jobs_saved}"
 
 
 def monitor_jobs(search_config: dict):
@@ -182,7 +187,11 @@ def monitor_jobs(search_config: dict):
     def check():
         now = datetime.now().strftime("%H:%M:%S")
         print(f"[{now}] 🔍 Checking...")
-        goal = f"Find brand new '{keywords}' jobs{' in ' + location if location else ''} posted in the last hour. Search all sources. Save any found."
+        goal = (
+            f"Find new '{keywords}' jobs"
+            f"{' in ' + location if location else ''}. "
+            f"Search job boards and RemoteOK. Save the top 5."
+        )
         run_agent(goal, verbose=False)
         print(f"[{now}] ✅ Done. Next in {interval} min.")
 
@@ -194,16 +203,17 @@ def monitor_jobs(search_config: dict):
 
 
 if __name__ == "__main__":
-    print("\n🤖 JOB SEARCH AGENT (Free Edition)\n" + "="*40)
+    print("\n🤖 JOB SEARCH AGENT (Free)\n" + "="*40)
     print("1. Single search\n2. Monitor mode\n")
     choice = input("Choose (1 or 2): ").strip()
     if choice == "1":
-        goal = input("What jobs are you looking for? ").strip() or "Find software engineer jobs posted today."
+        goal = input("What jobs? ").strip() or "Find IT jobs in Toronto posted today."
         run_agent(goal)
     elif choice == "2":
-        kw  = input("Keywords: ").strip() or "software engineer"
-        loc = input("Location (blank=anywhere): ").strip()
-        ivl = input("Check every X minutes (default 30): ").strip()
-        monitor_jobs({"keywords": kw, "location": loc, "check_every_minutes": int(ivl) if ivl.isdigit() else 30})
+        kw  = input("Keywords: ").strip() or "IT jobs"
+        loc = input("Location: ").strip()
+        ivl = input("Every X minutes (default 30): ").strip()
+        monitor_jobs({"keywords": kw, "location": loc,
+                      "check_every_minutes": int(ivl) if ivl.isdigit() else 30})
     else:
-        run_agent("Find software engineer jobs posted today across all sources.")
+        run_agent("Find IT jobs in Toronto posted today. Save the top 5.")
