@@ -27,7 +27,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 # ─── Models ────────────────────────────────────────────────────────────────────
 GROQ_MODEL   = "llama-3.3-70b-versatile"   # Best free Groq model
-GEMINI_MODEL = "gemini-1.5-flash-8b"   # Best free tier limits           # Free Gemini tier
+GEMINI_MODEL = "gemini-1.5-flash-latest"   # Stable free model           # Free Gemini tier
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
