@@ -27,7 +27,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 # ─── Models ────────────────────────────────────────────────────────────────────
 GROQ_MODEL   = "llama-3.3-70b-versatile"   # Best free Groq model
-GEMINI_MODEL = "gemini-2.0-flash"          # Free Gemini tier
+GEMINI_MODEL = "gemini-1.5-flash-8b"   # Best free tier limits           # Free Gemini tier
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -226,7 +226,17 @@ class GeminiClient:
         chat_history = history[:-1] if history else []
 
         chat = model.start_chat(history=chat_history)
-        response = chat.send_message(send_message)
+        # Retry once on rate limit
+        try:
+            response = chat.send_message(send_message)
+        except Exception as rate_err:
+            if "429" in str(rate_err) or "quota" in str(rate_err).lower():
+                import time
+                log.warning("Gemini rate limit — waiting 60s then retrying...")
+                time.sleep(60)
+                response = chat.send_message(send_message)
+            else:
+                raise
 
         # Parse response
         candidate = response.candidates[0]
@@ -282,19 +292,22 @@ class FreeAIClient:
         if GEMINI_API_KEY:
             try:
                 self.gemini = GeminiClient()
-                log.info("✅ Gemini client ready (gemini-1.5-flash)")
+                log.info("✅ Gemini client ready (fallback)")
             except Exception as e:
-                log.warning(f"Gemini unavailable: {e}")
+                log.warning(f"Gemini unavailable: {e} — will rely on Groq only")
+                self.gemini = None
         else:
-            log.warning("GEMINI_API_KEY not set — Gemini disabled")
+            log.warning("GEMINI_API_KEY not set — running on Groq only")
 
         if not self.groq and not self.gemini:
             raise RuntimeError(
-                "No AI client available!\n"
-                "Set at least one of: GROQ_API_KEY or GEMINI_API_KEY\n"
-                "Groq (free):   https://console.groq.com\n"
-                "Gemini (free): https://aistudio.google.com/app/apikey"
+                "No AI client available! Set GROQ_API_KEY in GitHub Secrets.\n"
+                "Get free key at: https://console.groq.com"
             )
+        if self.groq:
+            log.info(f"Primary AI: Groq (Llama 3.3 70B)")
+        if self.gemini:
+            log.info(f"Fallback AI: Gemini")
 
     def chat(self, messages: list, tools: list, system: str = "") -> dict:
         """
@@ -322,10 +335,17 @@ class FreeAIClient:
                 log.debug("Used: Gemini (fallback)")
                 return result
             except Exception as e:
+                err = str(e)
+                if "quota" in err.lower() or "429" in err or "limit: 0" in err:
+                    log.warning("Gemini quota exhausted for today — Groq is required")
+                    raise RuntimeError(
+                        "Groq failed AND Gemini quota exhausted.\n"
+                        "The Groq error is the root cause — check GROQ_API_KEY is valid."
+                    )
                 log.error(f"Gemini also failed: {e}")
                 raise RuntimeError(f"Both AI providers failed. Last error: {e}")
 
-        raise RuntimeError("No AI provider available")
+        raise RuntimeError("No AI provider available — check GROQ_API_KEY in GitHub Secrets")
 
     def status(self) -> str:
         parts = []
