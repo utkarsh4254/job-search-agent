@@ -103,8 +103,9 @@ def main():
     try:
         summary = run_agent(goal, verbose=True)
     except Exception as e:
-        log.error(f"Agent run failed: {e}")
-        raise SystemExit(1)
+        log.error(f"Agent run error: {e}")
+        log.info("Agent had an error but may have saved some jobs — continuing...")
+        summary = ""
 
     # ── Find newly added jobs ────────────────────────────────────
     jobs_after = load_jobs()
