@@ -55,7 +55,7 @@ jobs:
         run: |
           git config user.name  "Job Search Bot"
           git config user.email "bot@jobsearch.local"
-          if git diff --quiet saved_jobs.json seen_jobs.json 2>/dev/null; then
+          if git diff --quiet -- saved_jobs.json seen_jobs.json 2>/dev/null || ! git ls-files --error-unmatch saved_jobs.json 2>/dev/null; then
             echo "No new jobs found — nothing to commit."
           else
             git add saved_jobs.json seen_jobs.json
